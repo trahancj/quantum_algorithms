@@ -1,25 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
+import sys
+sys.path.append('/Users/corey/.pyenv/versions/3.5.4/lib/python3.5/site-packages')
 
-# In[14]:
-
-
-import numpy as np
-import sympy as sp
 from sympy import *
 from sympy.physics.quantum import TensorProduct
+from sympy.physics.quantum.dagger import Dagger
+from IPython.core.display import display, HTML
+import numpy as np
 import functools
 from operator import mul
 
-def get_pauli_matrices():
-    nPauli = 4
-    II = Matrix([[1+0*I,0],[0,1+0*I]])
-    Z = Matrix([[1,0],[0,-1]])
-    X = Matrix([[0,1],[1,0]])
-    Y = Matrix([[0,0-I],[0+I,0]])
-    Pauli = [II,X,Y,Z]
-    Pauli_Names = ["I","X","Y","Z"]
-    return nPauli, Pauli, Pauli_Names
+# Pauli Unitary Transformations
+nPauli = 4
+II = Matrix([[1+0*I,0],[0,1+0*I]])
+Z = Matrix([[1,0],[0,-1]])
+X = Matrix([[0,1],[1,0]])
+Y = Matrix([[0,0-I],[0+I,0]])
+Pauli = [II,X,Y,Z]
+Pauli_Names = ["I","X","Y","Z"]
 
 def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
     
@@ -88,11 +85,11 @@ def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
                                
     return pauli_decomp
 
-def print_pauli_decomp_list(pauli_decomp):
+def print_decomp_list(pauli_decomp):
     for i in range(0,len(pauli_decomp)):
         print(N(pauli_decomp[i][0],6)," ",pauli_decomp[i][1])
         
-def build_matrix_from_pauli_decomp(pauli_decomp, Pauli):
+def build_matrix_from_decomp(pauli_decomp):
     nqbits = len(pauli_decomp[0][2])
     print("nqbits: ",nqbits)
     
@@ -104,7 +101,6 @@ def build_matrix_from_pauli_decomp(pauli_decomp, Pauli):
     #P = pauli_decomp[0][0] * TensorProduct(Pauli[pauli_decomp[0][2][0]],Pauli[pauli_decomp[0][2][1]],Pauli[pauli_decomp[0][2][2]])
     #print(N(pauli_decomp[0][0],6)," * ",Pauli_Names[pauli_decomp[0][2][0]] + Pauli_Names[pauli_decomp[0][2][1]] + Pauli_Names[pauli_decomp[0][2][2]])
     for i in range(1,len(pauli_decomp)):
-        
         PP = TensorProduct(Pauli[pauli_decomp[i][2][0]],Pauli[pauli_decomp[i][2][1]])
         for ii in range(2,nqbits):
             PP = TensorProduct(PP,Pauli[pauli_decomp[i][2][ii]]);
@@ -113,34 +109,5 @@ def build_matrix_from_pauli_decomp(pauli_decomp, Pauli):
         #P = P + pauli_decomp[i][0] * TensorProduct(Pauli[pauli_decomp[i][2][0]],Pauli[pauli_decomp[i][2][1]],Pauli[pauli_decomp[i][2][2]])
         #print(N(pauli_decomp[i][0],6)," * ",Pauli_Names[pauli_decomp[i][2][0]] + Pauli_Names[pauli_decomp[i][2][1]] + Pauli_Names[pauli_decomp[i][2][2]])
     return P;
-
-
-# In[17]:
-
-
-# Test
-# from scipy.sparse import diags
-# def create_dirichlet_stiffness(n):
-#     temp = [np.ones(n-1),-2*np.ones(n),np.ones(n-1)]
-#     offset = [-1,0,1]
-#     K = diags(temp,offset).toarray()
-#     K[0,1:n] = 0
-#     K[n-1,1:n] = 0
-#     K[0,0] = 1
-#     K[n-1,n-1] = 1
-#     return K
-
-# # Create 4 bit (16 grid node) stiffness mmatrix
-# nqbit = 4
-# K = create_dirichlet_stiffness(2**nqbit)
-
-# nPauli, Pauli, Pauli_Names = get_pauli_matrices()
-# print("calling paulinomial decomposition")
-# result = pauli_decomp(nqbit,K,Pauli,Pauli_Names,nPauli)
-# TEST = build_matrix_from_pauli_decomp(result)
-# TEST = np.array(TEST).astype(np.float64)
-# print(TEST)
-# print(K)
-# DIFF = TEST - K
-# assert(abs(max(DIFF))<1e-12)
+    
 
