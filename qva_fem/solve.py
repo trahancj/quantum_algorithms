@@ -1,10 +1,13 @@
 from fem_1d import *
 import matplotlib.pyplot as plt
 
+def u_heat(x,t):
+    return (1./np.sqrt(4. * np.pi * t)) * np.exp(-pow(x-0.5,2)/(4.0 * t))
+
 xl = 0; xr = 1; nx = 6;
 tl = 1; tr = 3; nt = 11
 reduced=1;
-u, x, t, M, A, dt, h = heat_solve(xl,xr,nx,tl,tr,nt,reduced) 
+u, x, t, M, A, dt, h = heat_solve(xl,xr,nx,tl,tr,nt,reduced,u_heat) 
 
 
 hh,xx = create_grid(101,xl,xr) # for plotting analytic
