@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 xl = 0; xr = 1; nx = 6;
 tl = 1; tr = 3; nt = 11
 reduced=1;
-u, x, t, M, A, dt, h = heat_solve(xl,xr,nx,tl,tr,nt,reduced) 
+u, x, t, M, A, dt, h = heat_solve(xl,xr,nx,tl,tr,nt,reduced,1) 
 
 
 hh,xx = create_grid(101,xl,xr) # for plotting analytic

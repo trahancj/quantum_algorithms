@@ -214,9 +214,9 @@ def swap_gates(a,control,new_circ):
 
 # shifts the auto-generated solution to all real
 def Ph(quantum_circuit, theta, qubit,control_bit):
-    quantum_circuit.cu1(theta,control_bit, qubit)
+    quantum_circuit.cp(theta,control_bit, qubit)
     quantum_circuit.cx(control_bit,qubit)
-    quantum_circuit.cu1(theta,control_bit, qubit)
+    quantum_circuit.cp(theta,control_bit, qubit)
     quantum_circuit.cx(control_bit,qubit)
     return 0
 def control_version(circ,new_circ,control_bit):
@@ -342,7 +342,7 @@ def psi_norm_hadamard(nqbits,gate_1,gate_2,part,parameters,nlayers):
     backend = Aer.get_backend('aer_simulator')
             
     circ = had_test(circ, [gate_1,gate_2], qubits, aux, parameters, part, nlayers)
-
+    print(circ)
     circ.save_statevector()
     t_circ = transpile(circ, backend)
     qobj = assemble(t_circ)
@@ -351,6 +351,8 @@ def psi_norm_hadamard(nqbits,gate_1,gate_2,part,parameters,nlayers):
     #outputstate = np.real(result.get_statevector(circ, decimals=100))
     outputstate = result.get_statevector(circ, decimals=100)
     o = outputstate
+    print(f'RESULT 1: {result}')
+
     #print("o: ",o)
 
     # 5 qbit Psi = ['|00000>', '|00001>', '|00010>', '|00011>', '|00100>', '|00101>', '|00110>', '|00111>', /
@@ -368,6 +370,7 @@ def psi_norm_hadamard(nqbits,gate_1,gate_2,part,parameters,nlayers):
             #n = o[l]**2
             n = o[l] * o[l].conjugate()
             m_sum+=n
+
                     
     result = (1-(2*m_sum))
 
@@ -394,6 +397,7 @@ def bpsi_hadamard(nqbits,gate,part,parameters,nlayers,circ_RHS):
     circ = special_had_test(circ, gate, qubits, aux, anc, parameters, qctl, part, nlayers,circ_RHS)
     
     circ.save_statevector()
+    print(circ)
     t_circ = transpile(circ, backend)
     qobj = assemble(t_circ)
     job = backend.run(qobj)
@@ -401,15 +405,20 @@ def bpsi_hadamard(nqbits,gate,part,parameters,nlayers,circ_RHS):
     #outputstate = np.real(result.get_statevector(circ, decimals=100))
     outputstate = result.get_statevector(circ, decimals=100)
     o = outputstate
+    print(f'The state: {o}')
+    print(f'RESULT 2: {o}')
+
     
     m_sum = 0
     for l in range (0, len(o)):
         if (l%2 == 1):
+            print(o[l] * o[l].conjugate())
             #n = o[l]**2
             n = o[l] * o[l].conjugate()
             m_sum+=n
-            
+    print(m_sum)
     result = (1-(2*m_sum))
+    print(f"Result: {result}")
     
     return result
 
@@ -493,6 +502,7 @@ def run_qva(nqbits,nlayers,maxiter,c,g,b,parameters,method,rhobeg,ul,ur,uscale,r
 
     result = job.result()
     o = result.get_statevector(circ, decimals=3)
+    print("RESULT 3: {o}")
     
     u_internal = np.absolute(np.real(o))
     u_internal = u_internal * (uscale/u_internal[0])
