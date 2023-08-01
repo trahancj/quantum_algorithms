@@ -21,6 +21,7 @@ Pauli_Names = ["I","X","Y","Z"]
 def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
     
     pauli_decomp = []
+    new_pauli_decomp = []
     
     # ((qbit1),(qbit2),(qbit3),...)
     # ranges=((0,nPauli),(0,nPauli),(0,nPauli)) #<--- 3 qubit
@@ -54,8 +55,8 @@ def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
         for ii in range(1,nqbits):
             name =  name + Pauli_Names[result[ii]]
             index.append(result[ii])
-        pauli_decomp.append([coeff,name,index]) 
-
+        new_pauli_decomp.append(name) 
+        pauli_decomp.append([coeff,name,index])
     while increments < operations:
         if result[pos]==ranges[pos][1]-1:
             result[pos]=ranges[pos][0]
@@ -74,16 +75,16 @@ def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
             if (abs(coeff) > 1e-12):
                 #pauli_decomp.append([coeff,Pauli_Names[result[0]] + Pauli_Names[result[1]] + Pauli_Names[result[2]],[result[0],result[1],result[2]]])
                 #print(str(coeff) + "*" + Pauli_Names[result[0]] + Pauli_Names[result[1]] + Pauli_Names[result[2]])    
-                
                 # nqbit data entry
                 name = Pauli_Names[result[0]]
                 index = [result[0]]
                 for ii in range(1,nqbits):
                     name =  name + Pauli_Names[result[ii]]
                     index.append(result[ii])
+                new_pauli_decomp.append(name)
                 pauli_decomp.append([coeff,name,index]) 
                                
-    return pauli_decomp
+    return pauli_decomp, new_pauli_decomp
 
 def print_decomp_list(pauli_decomp):
     for i in range(0,len(pauli_decomp)):
