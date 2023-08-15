@@ -485,7 +485,7 @@ def run_qva(nqbits,nlayers,maxiter,c,g,b,parameters,method,rhobeg,ul,ur,uscale,r
     cost_values = []
     out = minimize(cost_function, parameters, args=(nqbits, g, c, nlayers, circ_RHS, cost_values, nit), method=method, options={'maxiter':maxiter,'rhobeg':rhobeg,'disp':False}) # Works great for 3 qubit
     #print("cost values: ",cost_values)
-    ######print(out)
+    print(f'OUT: {out}')
     final_parameters = out['x'][0:len(parameters)]
     parameters=final_parameters
     
@@ -503,7 +503,7 @@ def run_qva(nqbits,nlayers,maxiter,c,g,b,parameters,method,rhobeg,ul,ur,uscale,r
 
     result = job.result()
     o = result.get_statevector(circ, decimals=3)
-    ##print("RESULT 3: {o}")
+    print(f"RESULT 3: {o}")
     
     u_internal = np.absolute(np.real(o))
     u_internal = u_internal * (uscale/u_internal[0])

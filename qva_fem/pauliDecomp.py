@@ -19,7 +19,6 @@ Pauli = [II,X,Y,Z]
 Pauli_Names = ["I","X","Y","Z"]
 
 def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
-    
     pauli_decomp = []
     new_pauli_decomp = []
     
@@ -31,7 +30,6 @@ def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
     # now convert to tuples
     ranges = [tuple(l) for l in ranges]
     ranges = tuple(ranges)
-    #print(ranges)
 
     operations=functools.reduce(mul,(p[1]-p[0] for p in ranges))-1
     result=[i[0] for i in ranges]
@@ -42,7 +40,6 @@ def pauli_decomp(nqbits,M,Pauli,Pauli_Names,nPauli):
     P = TensorProduct(Pauli[result[0]],Pauli[result[1]])
     for ii in range(2,nqbits):
         P = TensorProduct(P,Pauli[result[ii]]);
-    
     coeff = (1/(2**(nqbits))) * trace(P*M)
     if (abs(coeff) > 1e-12):
         
@@ -92,7 +89,6 @@ def print_decomp_list(pauli_decomp):
         
 def build_matrix_from_decomp(pauli_decomp):
     nqbits = len(pauli_decomp[0][2])
-    print("nqbits: ",nqbits)
     
     P = TensorProduct(Pauli[pauli_decomp[0][2][0]],Pauli[pauli_decomp[0][2][1]])
     for ii in range(2,nqbits):

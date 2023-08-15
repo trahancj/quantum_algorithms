@@ -14,7 +14,20 @@ from qiskit_aer import AerSimulator
 #from qiskit_aer.primitives import Estimator  # import change!!!
 from qiskit.primitives import Estimator
 from scipy.optimize import minimize
+from qiskit_ibm_runtime import Options
+# Importing standard Qiskit libraries
+from qiskit import QuantumCircuit, transpile
+from qiskit.tools.jupyter import *
+from qiskit.visualization import *
+from qiskit.providers.ibmq import least_busy
+from qiskit import QuantumCircuit, execute, transpile, Aer, IBMQ
+from qiskit_ibm_runtime import Estimator
 
+## RUNNING ON IBM ##
+from qiskit_ibm_runtime import QiskitRuntimeService
+QiskitRuntimeService.save_account(channel="ibm_quantum", token="ENTER_API_TOKEN")
+service = QiskitRuntimeService()
+backend = service.backend("ibmq_qasm_simulator")
 
 
 ###############################
@@ -59,9 +72,12 @@ def b_psi(parameters,nqbits, nlayers, g):
     ## prepare |0> state ##
     state = QuantumCircuit(nqbits)
 
-    ## Run estimator ##
+    ## Run estimator locally##
+    ##estimator = Estimator()
 
-    estimator = Estimator()
+    ## ON IBM ##
+    estimator = Estimator(backend=backend)
+
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
     #print("*********************************************")
@@ -82,6 +98,8 @@ def b_psi(parameters,nqbits, nlayers, g):
 ###############################
 
 def psi_psi(parameters, nqbits, nlayers, g1, g2):
+    
+
     qubits = []
     for i in range(0,nqbits):
         qubits.append(i)
@@ -98,7 +116,13 @@ def psi_psi(parameters, nqbits, nlayers, g1, g2):
 
     op = An.compose(Am)
 
-    estimator = Estimator()
+    ##run locally ##
+    ##estimator = Estimator()
+
+
+    # ON IBM ##
+    estimator = Estimator(backend=backend)
+
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
     #print("*********************************************")
@@ -115,10 +139,19 @@ def psi_psi(parameters, nqbits, nlayers, g1, g2):
 cost_values = []
 
 
+def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_set,cost_values):
+    test = True
+    global counter
+    if test:
+        counter = 0
+    test = False
+    if counter%15 > 0:
+        if counter > 0:
+            session.close()
+        service = QiskitRuntimeService()
+        session = Session(service=service, backend="ibmq_qasm_simulator")
+        
 
-def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_set):
-    #print(f'Parameters in new cost function {parameters}')
-    #print("IN NEW COST FUNCTION")
     norm = complex(0,0)
     cost = complex(0,0)
     for i in range(0,len(my_gate_set)):
@@ -132,15 +165,23 @@ def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_s
     #print(cost)
     norm = complex(norm)
 
+    
+    if (abs(cost.imag) > 1e-10):
+        print("TEST FAILED: abs(np.imag(cost) > 1e-10 :: result = ",abs(np.imag(cost)))
+        sys.exit("ERRORS!")
+    if (abs(norm.imag) > 1e-10):
+        print("TEST FAILED: abs(np.imag(norm) > 1e-10 :: result = ",abs(np.imag(norm)))
+        sys.exit("ERRORS!")
     result = 1-float(cost.real/norm.real)
     cost_values.append(result)
     print("iteration: ",len(cost_values)," || cost: ",result) #," || w: ",parameters)
+
+    counter += 1
     return result
 
 
 
 def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,uscale,reduced):
-    #print("NEW RUN QVA")
     n = 2**nqbits
     nparameters = nqbits + 2*(nqbits-1)*(nlayers-1)
     print(f"Number of parameters {nparameters} and length {len(parameters)}")
@@ -153,8 +194,7 @@ def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,us
 
     # Normalize this vector
     b = b/np.linalg.norm(b)
-    #print("NORMALIZE THIS VECTOR")
-    #b = np.array(b,dtype=complex)
+    
     
     # Get a circuit that takes 0 state and gives the vector
     automated_circ = QuantumCircuit(nqbits+1)
@@ -165,11 +205,10 @@ def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,us
     nit = 0
     cost_values = []
     maxiter = 4000
-    #print("BEFORE MINIMIZE")
-    out = minimize(new_cost_function, parameters, args=(nqbits, nlayers, g, c), method=method, options={'maxiter':maxiter,'rhobeg':rhobeg,'disp':False}) # Works great for 3 qubit
-    #print("AFTER MINIMIZE")
-    #print("cost values: ",cost_values)
-    #print(out)
+
+    
+    out = minimize(new_cost_function,parameters, args=(nqbits, nlayers, g, c,cost_values), method=method, options={'maxiter':maxiter,'rhobeg':rhobeg,'disp':False}) # Works great for 3 qubit
+    print(f'OUT: {out}')
     final_parameters = out['x'][0:len(parameters)]
     parameters=final_parameters
     
@@ -180,13 +219,20 @@ def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,us
     circ = QuantumCircuit(nqbits, nqbits)
     circ = ansatz_RYZ(circ, qubits, final_parameters, nlayers)
     circ.save_statevector()
-    backend = Aer.get_backend('aer_simulator')
-    t_circ = transpile(circ, backend)
-    qobj = assemble(t_circ)
-    job = backend.run(qobj)
 
+    ## run locally ##
+    ##backend = Aer.get_backend('aer_simulator')
+    ##t_circ = transpile(circ, backend)
+    ##qobj = assemble(t_circ)
+    ##job = backend.run(qobj)
+    ##result = job.result()
+    ##o = result.get_statevector(circ, decimals=3)
+
+    ## ON IBM ##
+    job = execute(circ,backend, shots = 1024)
     result = job.result()
     o = result.get_statevector(circ, decimals=3)
+    
     
     u_internal = np.absolute(np.real(o))
     u_internal = u_internal * (uscale/u_internal[0])
@@ -200,5 +246,5 @@ def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,us
         u[n-1] = ur
         u[1:n-1] = u_internal
         
-    #print("cost_Values: ".cost_values)
+    ##print("cost_Values: ",cost_values)
     return u,parameters,cost_values
