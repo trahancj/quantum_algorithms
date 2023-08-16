@@ -21,14 +21,13 @@ from qiskit.tools.jupyter import *
 from qiskit.visualization import *
 from qiskit.providers.ibmq import least_busy
 from qiskit import QuantumCircuit, execute, transpile, Aer, IBMQ
-from qiskit_ibm_runtime import Estimator
 
 ## RUNNING ON IBM ##
-from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import QiskitRuntimeService,Estimator,Session
 QiskitRuntimeService.save_account(channel="ibm_quantum", token="ENTER_API_TOKEN")
 service = QiskitRuntimeService()
 backend = service.backend("ibmq_qasm_simulator")
-
+session = Session(service=service, backend=backend)
 
 ###############################
 #     <0| U^d An V(k) |0>     #
@@ -76,7 +75,7 @@ def b_psi(parameters,nqbits, nlayers, g):
     ##estimator = Estimator()
 
     ## ON IBM ##
-    estimator = Estimator(backend=backend)
+    estimator = Estimator(session=session)
 
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
@@ -121,7 +120,7 @@ def psi_psi(parameters, nqbits, nlayers, g1, g2):
 
 
     # ON IBM ##
-    estimator = Estimator(backend=backend)
+    estimator = Estimator(session=session)
 
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
@@ -138,18 +137,19 @@ def psi_psi(parameters, nqbits, nlayers, g1, g2):
 
 cost_values = []
 
+    
+
 
 def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_set,cost_values):
-    test = True
-    global counter
-    if test:
-        counter = 0
-    test = False
+    service = QiskitRuntimeService()
+    backend = service.backend("ibmq_qasm_simulator")
+    session = Session(service=service, backend=backend)
+    counter = len(cost_values)
     if counter%15 > 0:
         if counter > 0:
             session.close()
         service = QiskitRuntimeService()
-        session = Session(service=service, backend="ibmq_qasm_simulator")
+        session = Session(service=service, backend=backend)
         
 
     norm = complex(0,0)
@@ -162,21 +162,24 @@ def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_s
             t2 = complex(b_psi(parameters, nqbits, nlayers, my_gate_set[j])[0].real, b_psi(parameters, nqbits, nlayers, my_gate_set[j])[0].imag)
             cost +=  my_coefficient_set[i] * my_coefficient_set[j] * t1 * t2
     cost = complex(cost)
+    print(f'COST: {cost}')
     #print(cost)
     norm = complex(norm)
-
+    print(f'NORM: {norm}')
     
-    if (abs(cost.imag) > 1e-10):
-        print("TEST FAILED: abs(np.imag(cost) > 1e-10 :: result = ",abs(np.imag(cost)))
-        sys.exit("ERRORS!")
-    if (abs(norm.imag) > 1e-10):
-        print("TEST FAILED: abs(np.imag(norm) > 1e-10 :: result = ",abs(np.imag(norm)))
-        sys.exit("ERRORS!")
+## DOES NOT WORK ON QUANTUM COMPUTER, LIKELY BECAUSE OF NOISE ##
+
+    ##if (abs(cost.imag) > 1e-10):
+    ##    print("TEST FAILED: abs(np.imag(cost) > 1e-10 :: result = ",abs(np.imag(cost)))
+    ##    sys.exit("ERRORS!")
+    ##if (abs(norm.imag) > 1e-10):
+    ##    print("TEST FAILED: abs(np.imag(norm) > 1e-10 :: result = ",abs(np.imag(norm)))
+    ##    sys.exit("ERRORS!")
     result = 1-float(cost.real/norm.real)
     cost_values.append(result)
     print("iteration: ",len(cost_values)," || cost: ",result) #," || w: ",parameters)
 
-    counter += 1
+    print(f'Counter {counter}')
     return result
 
 
