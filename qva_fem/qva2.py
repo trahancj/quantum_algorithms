@@ -12,6 +12,7 @@ import qiskit.quantum_info as qi
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 #from qiskit_aer.primitives import Estimator  # import change!!!
+from qiskit_aer.primitives import Estimator as AerEstimator
 from qiskit.primitives import Estimator
 from scipy.optimize import minimize
 from qiskit_ibm_runtime import Options
@@ -21,13 +22,15 @@ from qiskit.tools.jupyter import *
 from qiskit.visualization import *
 from qiskit.providers.ibmq import least_busy
 from qiskit import QuantumCircuit, execute, transpile, Aer, IBMQ
+import time
+start_time = time.time()
 
 ## RUNNING ON IBM ##
-from qiskit_ibm_runtime import QiskitRuntimeService,Estimator,Session
-QiskitRuntimeService.save_account(channel="ibm_quantum", token="ENTER_API_TOKEN")
-service = QiskitRuntimeService()
-backend = service.backend("ibmq_qasm_simulator")
-session = Session(service=service, backend=backend)
+##from qiskit_ibm_runtime import QiskitRuntimeService,Estimator,Session
+##QiskitRuntimeService.save_account(channel="ibm_quantum", token="")
+##service = QiskitRuntimeService()
+##backend = service.backend("ibmq_qasm_simulator")
+##session = Session(service=service, backend=backend)
 
 ###############################
 #     <0| U^d An V(k) |0>     #
@@ -72,10 +75,10 @@ def b_psi(parameters,nqbits, nlayers, g):
     state = QuantumCircuit(nqbits)
 
     ## Run estimator locally##
-    ##estimator = Estimator()
+    estimator = AerEstimator()
 
     ## ON IBM ##
-    estimator = Estimator(session=session)
+    #estimator = Estimator(session=session)
 
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
@@ -116,11 +119,11 @@ def psi_psi(parameters, nqbits, nlayers, g1, g2):
     op = An.compose(Am)
 
     ##run locally ##
-    ##estimator = Estimator()
+    estimator = AerEstimator()
 
 
     # ON IBM ##
-    estimator = Estimator(session=session)
+    #estimator = Estimator(session=session)
 
     expectation_value = estimator.run(state, op).result().values
     ##expectation_value = estimator.run(state, op, shots=10000).result().values
@@ -141,15 +144,16 @@ cost_values = []
 
 
 def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_set,cost_values):
-    service = QiskitRuntimeService()
-    backend = service.backend("ibmq_qasm_simulator")
-    session = Session(service=service, backend=backend)
-    counter = len(cost_values)
-    if counter%15 > 0:
-        if counter > 0:
-            session.close()
-        service = QiskitRuntimeService()
-        session = Session(service=service, backend=backend)
+    #service = QiskitRuntimeService()
+    #backend = service.backend("ibmq_qasm_simulator")
+    #session = Session(service=service, backend=backend)
+    #counter = len(cost_values)
+    #if counter%15 > 0:
+    #    if counter > 0:
+    #        print("New session")
+    #        session.close()
+    #    service = QiskitRuntimeService()
+    #    session = Session(service=service, backend=backend)
         
 
     norm = complex(0,0)
@@ -162,10 +166,9 @@ def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_s
             t2 = complex(b_psi(parameters, nqbits, nlayers, my_gate_set[j])[0].real, b_psi(parameters, nqbits, nlayers, my_gate_set[j])[0].imag)
             cost +=  my_coefficient_set[i] * my_coefficient_set[j] * t1 * t2
     cost = complex(cost)
-    print(f'COST: {cost}')
-    #print(cost)
+    #print(f'COST: {cost}')
     norm = complex(norm)
-    print(f'NORM: {norm}')
+    #print(f'NORM: {norm}')
     
 ## DOES NOT WORK ON QUANTUM COMPUTER, LIKELY BECAUSE OF NOISE ##
 
@@ -177,9 +180,10 @@ def new_cost_function(parameters, nqbits, nlayers, my_gate_set, my_coefficient_s
     ##    sys.exit("ERRORS!")
     result = 1-float(cost.real/norm.real)
     cost_values.append(result)
-    print("iteration: ",len(cost_values)," || cost: ",result) #," || w: ",parameters)
+    current_time = time.time()
+    print("iteration: ",len(cost_values)," || cost: ",result, "|| time: ",(current_time-start_time)) #," || w: ",parameters)
 
-    print(f'Counter {counter}')
+    #print(f'Counter {counter}')
     return result
 
 
@@ -224,17 +228,17 @@ def new_run_qva(nqbits, nlayers, maxiter,c,g,b,parameters,method,rhobeg,ul,ur,us
     circ.save_statevector()
 
     ## run locally ##
-    ##backend = Aer.get_backend('aer_simulator')
-    ##t_circ = transpile(circ, backend)
-    ##qobj = assemble(t_circ)
-    ##job = backend.run(qobj)
-    ##result = job.result()
-    ##o = result.get_statevector(circ, decimals=3)
-
-    ## ON IBM ##
-    job = execute(circ,backend, shots = 1024)
+    backend = Aer.get_backend('aer_simulator')
+    t_circ = transpile(circ, backend)
+    qobj = assemble(t_circ)
+    job = backend.run(qobj)
     result = job.result()
     o = result.get_statevector(circ, decimals=3)
+
+    ## ON IBM ##
+    #job = execute(circ,backend, shots = 1024)
+    #result = job.result()
+    #o = result.get_statevector(circ, decimals=3)
     
     
     u_internal = np.absolute(np.real(o))
